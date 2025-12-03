@@ -1,6 +1,6 @@
 qiskit
-qiskit-aer
-numpy
+qiskit-algorithms
 matplotlib
+pylatexenc
+numpy
 scipy
-jupyter
