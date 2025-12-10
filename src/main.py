@@ -23,7 +23,7 @@ def simulate_figure_2(outdir):
     colors = ['magenta', 'green', 'red', 'blue']
     labels = [r'$g_\Omega = g$', r'$g_\Omega = 1.5g$', r'$g_\Omega = 2g$', r'$g_\Omega = 4g$']
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(8, 6)) # Single plot
     
     for g_omega, color, label in zip(g_omega_values, colors, labels):
         ham = H2Hamiltonian()
@@ -33,9 +33,6 @@ def simulate_figure_2(outdir):
         psi0 = get_initial_state()
         
         states = sim.evolve(psi0, times)
-        
-        # Entropy of photons (Q0, Q1)
-        # Subsystem A = {Q0, Q1}
         entropies = [sim.compute_entropy(state, [0, 1]) for state in states]
         
         plt.plot(times, entropies, color=color, label=label)
@@ -43,37 +40,21 @@ def simulate_figure_2(outdir):
     plt.xlabel('Time (s)')
     plt.ylabel('Entropy')
     plt.title('Figure 2: Effect of $g_\Omega$')
-    plt.legend()
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=4)
     plt.grid(True, alpha=0.3)
-    plt.ylim(0, 2) # Max entropy for 2 qubits is 2
+    plt.ylim(0, 1.1)
+    
+    ticks = np.arange(0, 2.01e-6, 0.25e-6)
+    plt.xticks(ticks)
+    
+    plt.tight_layout()
     plt.savefig(os.path.join(outdir, 'figure_2_qiskit.png'))
     plt.close()
 
 def simulate_figure_3(outdir):
     print("Simulating Figure 3...")
-    t_max = 1e-6 # Paper uses 1e-4 in label but 1e-6 in text? 
-    # Figure 3 x-axis says 1e-4? No, wait.
-    # Figure 2 x-axis is 2.00 1e-6.
-    # Figure 3 x-axis is 1.0 1e-4?
-    # Let's check qiskit4.py: t_max=1e-6.
-    # Let's check uploaded image 3. x-axis is 1e-4?
-    # Wait, uploaded_image_1 (Fig 3) x-axis shows 1.0 1e-4.
-    # But qiskit4.py used 1e-6.
-    # If I use 1e-4, it will be very slow if step is small.
-    # Let's stick to qiskit4.py values or check paper text.
-    # Paper text: "t_max" not explicitly stated for Fig 3, but Fig 3 caption says "Effect of ... g_omega".
-    # Wait, Fig 3 is g_phonon (covalent bond).
-    # Let's use 1e-4 as per image axis if possible, but maybe with fewer steps or check convergence.
-    # Actually, 1e-4 is 100x longer than 1e-6.
-    # If oscillation period is ~ 1/g ~ 1/1e7 = 1e-7.
-    # Then 1e-6 is 10 periods. 1e-4 is 1000 periods.
-    # The envelope in Fig 3 is slow.
-    # g_phonon is small (g/100 = 1e5). Period ~ 1e-5.
-    # So 1e-4 covers ~10 envelope periods. This matches the image.
-    # So t_max should be 1e-4.
-    
     t_max = 1e-4
-    n_steps = 1000 # Need enough resolution
+    n_steps = 1000 
     times = np.linspace(0, t_max, n_steps)
     
     g_omega = G_BASE
@@ -81,10 +62,11 @@ def simulate_figure_3(outdir):
     g_phonon_values = [G_BASE/100.0, G_BASE/20.0, G_BASE/10.0, G_BASE/5.0]
     colors = ['magenta', 'green', 'red', 'blue']
     labels = [r'$g_\omega = g/100$', r'$g_\omega = g/20$', r'$g_\omega = g/10$', r'$g_\omega = g/5$']
+    panel_labels = ['(b)', '(c)', '(d)', '(e)']
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(8, 10)) # Vertical stack
     
-    for g_phonon, color, label in zip(g_phonon_values, colors, labels):
+    for i, (g_phonon, color, label) in enumerate(zip(g_phonon_values, colors, labels)):
         ham = H2Hamiltonian()
         H_op = ham.get_hamiltonian_op(g_omega, g_phonon, zeta)
         
@@ -94,13 +76,23 @@ def simulate_figure_3(outdir):
         states = sim.evolve(psi0, times)
         entropies = [sim.compute_entropy(state, [0, 1]) for state in states]
         
-        plt.plot(times, entropies, color=color, label=label, alpha=0.8)
+        plt.subplot(4, 1, i+1)
+        plt.plot(times, entropies, color=color, label=label)
         
-    plt.xlabel('Time (s)')
-    plt.ylabel('Entropy')
-    plt.title('Figure 3: Effect of $g_\omega$')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+        plt.text(0.02, 0.85, panel_labels[i], transform=plt.gca().transAxes, fontsize=12, fontweight='bold')
+        
+        if i == 3:
+            plt.xlabel('Time (s)')
+            ticks = np.arange(0, 1.01e-4, 0.2e-4)
+            plt.xticks(ticks)
+        else:
+            plt.xticks([]) 
+            
+        plt.ylabel('Entropy')
+        plt.ylim(0, 1.1)
+        plt.grid(True, alpha=0.3)
+        
+    plt.tight_layout()
     plt.savefig(os.path.join(outdir, 'figure_3_qiskit.png'))
     plt.close()
 
@@ -116,9 +108,9 @@ def simulate_figure_4(outdir):
     colors = ['magenta', 'green', 'red', 'blue']
     labels = [r'$\zeta = g/10$', r'$\zeta = g/2$', r'$\zeta = g$', r'$\zeta = 3g/2$']
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 8))
     
-    for zeta, color, label in zip(zeta_values, colors, labels):
+    for i, (zeta, color, label) in enumerate(zip(zeta_values, colors, labels)):
         ham = H2Hamiltonian()
         H_op = ham.get_hamiltonian_op(g_omega, g_phonon, zeta)
         
@@ -128,13 +120,14 @@ def simulate_figure_4(outdir):
         states = sim.evolve(psi0, times)
         entropies = [sim.compute_entropy(state, [0, 1]) for state in states]
         
+        plt.subplot(2, 2, i+1)
         plt.plot(times, entropies, color=color, label=label)
+        plt.xlabel('Time (s)')
+        plt.ylabel('Entropy')
+        plt.title(f'Fig 4: {label}')
+        plt.grid(True, alpha=0.3)
         
-    plt.xlabel('Time (s)')
-    plt.ylabel('Entropy')
-    plt.title('Figure 4: Effect of $\zeta$')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
     plt.savefig(os.path.join(outdir, 'figure_4_qiskit.png'))
     plt.close()
 
@@ -264,6 +257,63 @@ def simulate_figure_9(outdir):
     plt.savefig(os.path.join(outdir, 'figure_9_qiskit.png'))
     plt.close()
 
+def simulate_figure_5(outdir):
+    print("Simulating Figure 5...")
+    # Figure 5: Max entropy vs g_Omega and zeta.
+    # We need to scan a range of g_Omega and zeta.
+    # Paper says "linear relationship... g_Omega = zeta... g_Omega = 2*zeta".
+    # Let's scan a grid.
+    
+    t_max = 2e-6 # Sufficient time to reach peak
+    n_steps = 100
+    times = np.linspace(0, t_max, n_steps)
+    
+    g_phonon = G_BASE / 10.0
+    
+    # Grid
+    # g_Omega from 0 to 4g
+    # zeta from 0 to 4g
+    # Resolution: 20x20?
+    
+    n_grid = 20
+    g_omega_vals = np.linspace(0, 4*G_BASE, n_grid)
+    zeta_vals = np.linspace(0, 4*G_BASE, n_grid)
+    
+    max_entropies = np.zeros((n_grid, n_grid))
+    
+    for i, g_om in enumerate(g_omega_vals):
+        for j, z in enumerate(zeta_vals):
+            ham = H2Hamiltonian()
+            H_op = ham.get_hamiltonian_op(g_om, g_phonon, z)
+            sim = QiskitSimulation(H_op)
+            psi0 = get_initial_state()
+            
+            # We don't need all states, just max entropy.
+            # But evolve returns all.
+            states = sim.evolve(psi0, times)
+            entropies = [sim.compute_entropy(state, [0, 1]) for state in states]
+            max_entropies[i, j] = np.max(entropies)
+            
+    # Plot heatmap
+    plt.figure(figsize=(8, 6))
+    X, Y = np.meshgrid(zeta_vals/G_BASE, g_omega_vals/G_BASE)
+    plt.pcolormesh(X, Y, max_entropies, shading='auto', cmap='viridis')
+    plt.colorbar(label='Max Entropy')
+    plt.xlabel(r'$\zeta / g$')
+    plt.ylabel(r'$g_\Omega / g$')
+    plt.title('Figure 5: Max Entropy vs Interaction Strengths')
+    
+    # Add lines for ridges if needed, but heatmap shows them.
+    # Ridge 1: g_Omega = zeta
+    plt.plot([0, 4], [0, 4], 'w--', alpha=0.5, label=r'$g_\Omega = \zeta$')
+    # Ridge 2: g_Omega = 2*zeta
+    plt.plot([0, 2], [0, 4], 'w:', alpha=0.5, label=r'$g_\Omega = 2\zeta$')
+    
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(outdir, 'figure_5_qiskit.png'))
+    plt.close()
+
 if __name__ == "__main__":
     outdir = "output"
     ensure_dir(outdir)
@@ -271,6 +321,7 @@ if __name__ == "__main__":
     simulate_figure_2(outdir)
     simulate_figure_3(outdir)
     simulate_figure_4(outdir)
+    simulate_figure_5(outdir)
     simulate_figure_6_and_7(outdir)
     simulate_figure_8(outdir)
     simulate_figure_9(outdir)

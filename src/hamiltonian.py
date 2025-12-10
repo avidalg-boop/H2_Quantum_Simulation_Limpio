@@ -148,11 +148,7 @@ class H2Hamiltonian:
         P_together = self._op({6: 0.5 * (self.I + self.Z)})
         
         # Jaynes-Cummings Up: g_omega * (a_up_dag * sigma_up + a_up * sigma_up_dag) * bond_formed
-        # Paper says hybridization (and thus bond formation) only possible when atoms together.
-        # Once bond is formed, does it imply atoms are together? 
-        # Usually yes. But let's assume the gating is primarily on the FORMATION process (g_phonon).
-        # However, if the bond is formed, the electrons can interact with photons.
-        # Let's leave JC terms as is (dependent on bond_formed).
+        # Eq (4) explicitly has sigma_omega * sigma_omega_dag, which is the projector onto L=0 (bond formed).
         jc_up = (a_up_dag @ sigma_up) + (a_up @ sigma_up_dag)
         H += g_omega * (jc_up @ bond_formed)
         
@@ -161,20 +157,19 @@ class H2Hamiltonian:
         H += g_omega * (jc_down @ bond_formed)
         
         # Phonon-Bond Interaction: g_phonon * (a_phonon_dag * sigma_bond + a_phonon * sigma_bond_dag)
-        # This creates/breaks the bond.
-        # Constraint 1: Hybridization (bond formation) only possible if atoms are together (k=0).
+        # Eq (4) does not show a constraint for this term.
+        # We remove P_together to strictly follow the equation.
         bond_phonon = (a_phonon_dag @ sigma_bond) + (a_phonon @ sigma_bond_dag)
-        H += g_phonon * (bond_phonon @ P_together)
+        H += g_phonon * bond_phonon
         
         # Tunneling: zeta * (sigma_tunnel_dag * sigma_tunnel + sigma_tunnel * sigma_tunnel_dag)
-        # Constraint 2: Tunneling (scattering to k=1) only possible if bond is broken (L=1).
-        # If bonded (L=0), atoms are held together.
-        # P_broken = |1><1|_L = n_sigma_bond
-        P_broken = n_sigma_bond
+        # Eq (4) does NOT show a constraint. The text says "tunneling intensity".
+        # We interpret the term as X operator (hopping).
+        # We REMOVE the P_broken constraint to allow tunneling even if bonded (molecular tunneling).
         
         # Tunneling operator (X on Q6)
         tunnel_op = self._op({6: self.X})
-        H += zeta * (tunnel_op @ P_broken)
+        H += zeta * tunnel_op
         
         return H.simplify()
 
